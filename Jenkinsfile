@@ -1,26 +1,32 @@
 pipeline {
-
     agent any
 
     environment {
         IMAGE_NAME = "frontend-app"
         CONTAINER_NAME = "frontend-container"
         PORT = "8081"
+        PODMAN = "/usr/bin/podman"
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Source') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Verify User') {
+        stage('System Information') {
             steps {
                 sh '''
-                sudo -u student whoami
-                sudo -u student podman --version
+                echo "===== USER ====="
+                whoami
+
+                echo "===== WORKSPACE ====="
+                pwd
+
+                echo "===== PODMAN VERSION ====="
+                sudo $PODMAN --version
                 '''
             }
         }
@@ -28,16 +34,19 @@ pipeline {
         stage('Build Image') {
             steps {
                 sh '''
-                sudo -u student podman build -t $IMAGE_NAME .
+                echo "===== BUILD IMAGE ====="
+                sudo $PODMAN build -t $IMAGE_NAME .
                 '''
             }
         }
 
-        stage('Stop Old Container') {
+        stage('Remove Existing Container') {
             steps {
                 sh '''
-                sudo -u student podman stop $CONTAINER_NAME || true
-                sudo -u student podman rm $CONTAINER_NAME || true
+                echo "===== REMOVE OLD CONTAINER ====="
+
+                sudo $PODMAN stop $CONTAINER_NAME || true
+                sudo $PODMAN rm $CONTAINER_NAME || true
                 '''
             }
         }
@@ -45,10 +54,12 @@ pipeline {
         stage('Run Container') {
             steps {
                 sh '''
-                sudo -u student podman run -d \
-                --name $CONTAINER_NAME \
-                -p $PORT:80 \
-                $IMAGE_NAME
+                echo "===== START NEW CONTAINER ====="
+
+                sudo $PODMAN run -d \
+                    --name $CONTAINER_NAME \
+                    -p $PORT:80 \
+                    $IMAGE_NAME
                 '''
             }
         }
@@ -56,24 +67,35 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                sudo -u student podman ps
+                echo "===== RUNNING CONTAINERS ====="
+                sudo $PODMAN ps
+
+                echo "===== AVAILABLE IMAGES ====="
+                sudo $PODMAN images
                 '''
             }
         }
     }
 
     post {
+
         success {
-            echo "Deployment Successful"
-            echo "Application URL: http://workstation:8081"
+            echo '======================================'
+            echo 'Frontend Deployment Successful'
+            echo 'Application URL:'
+            echo 'http://workstation:8081'
+            echo '======================================'
         }
 
         failure {
-            echo "Deployment Failed"
+            echo '======================================'
+            echo 'Deployment Failed'
+            echo 'Check Console Output'
+            echo '======================================'
         }
 
         always {
-            echo "Pipeline Finished"
+            echo 'Pipeline Finished'
         }
     }
 }
