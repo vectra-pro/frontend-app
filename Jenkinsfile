@@ -28,8 +28,7 @@ pipeline {
         stage('Build Image') {
             steps {
                 sh '''
-                sudo -u student podman build \
-                -t $IMAGE_NAME .
+                sudo -u student podman build -t $IMAGE_NAME .
                 '''
             }
         }
@@ -61,15 +60,12 @@ pipeline {
                 '''
             }
         }
-
     }
 
     post {
-
         success {
             echo "Deployment Successful"
-            echo "Open:"
-            echo "http://workstation:8081"
+            echo "Application URL: http://workstation:8081"
         }
 
         failure {
@@ -79,5 +75,5 @@ pipeline {
         always {
             echo "Pipeline Finished"
         }
-
+    }
 }
