@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     environment {
@@ -15,14 +16,11 @@ pipeline {
             }
         }
 
-        stage('Show Environment') {
+        stage('Verify User') {
             steps {
                 sh '''
-                echo "========== SYSTEM INFORMATION =========="
-                whoami
-                pwd
-                echo $PATH
-                /usr/bin/docker --version
+                sudo -u student whoami
+                sudo -u student podman --version
                 '''
             }
         }
@@ -30,16 +28,17 @@ pipeline {
         stage('Build Image') {
             steps {
                 sh '''
-                sudo /usr/bin/docker build -t $IMAGE_NAME .
+                sudo -u student podman build \
+                -t $IMAGE_NAME .
                 '''
             }
         }
 
-        stage('Stop Existing Container') {
+        stage('Stop Old Container') {
             steps {
                 sh '''
-                sudo /usr/bin/docker stop $CONTAINER_NAME || true
-                sudo /usr/bin/docker rm $CONTAINER_NAME || true
+                sudo -u student podman stop $CONTAINER_NAME || true
+                sudo -u student podman rm $CONTAINER_NAME || true
                 '''
             }
         }
@@ -47,7 +46,7 @@ pipeline {
         stage('Run Container') {
             steps {
                 sh '''
-                sudo /usr/bin/docker run -d \
+                sudo -u student podman run -d \
                 --name $CONTAINER_NAME \
                 -p $PORT:80 \
                 $IMAGE_NAME
@@ -58,35 +57,27 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                echo "========== RUNNING CONTAINERS =========="
-                sudo /usr/bin/docker ps
-
-                echo "========== IMAGES =========="
-                sudo /usr/bin/docker images
+                sudo -u student podman ps
                 '''
             }
         }
+
     }
 
     post {
 
         success {
-            echo "========================================="
-            echo "Frontend deployed successfully!"
-            echo "Access your application at:"
-            echo "http://<SERVER-IP>:8081"
-            echo "========================================="
+            echo "Deployment Successful"
+            echo "Open:"
+            echo "http://workstation:8081"
         }
 
         failure {
-            echo "========================================="
-            echo "Deployment Failed!"
-            echo "Check the Console Output."
-            echo "========================================="
+            echo "Deployment Failed"
         }
 
         always {
-            echo "Pipeline execution completed."
+            echo "Pipeline Finished"
         }
-    }
+
 }
