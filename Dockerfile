@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/httpd-24
+FROM registry.access.redhat.com/ubi8/httpd-24:1782839205
 
 COPY frontend-app/* /var/www/html/
 
