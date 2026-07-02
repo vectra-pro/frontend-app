@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "frontend-app"
         CONTAINER_NAME = "frontend-container"
-        DOCKER = "/usr/bin/docker"
+        PORT = "8081"
     }
 
     stages {
@@ -18,16 +18,10 @@ pipeline {
         stage('Show Environment') {
             steps {
                 sh '''
-                echo "Current User:"
+                echo "========== SYSTEM INFORMATION =========="
                 whoami
-
-                echo "PATH:"
+                pwd
                 echo $PATH
-
-                echo "Docker Location:"
-                which docker || true
-
-                echo "Docker Version:"
                 /usr/bin/docker --version
                 '''
             }
@@ -36,7 +30,7 @@ pipeline {
         stage('Build Image') {
             steps {
                 sh '''
-                $DOCKER build -t $IMAGE_NAME .
+                sudo /usr/bin/docker build -t $IMAGE_NAME .
                 '''
             }
         }
@@ -44,8 +38,8 @@ pipeline {
         stage('Stop Existing Container') {
             steps {
                 sh '''
-                $DOCKER stop $CONTAINER_NAME || true
-                $DOCKER rm $CONTAINER_NAME || true
+                sudo /usr/bin/docker stop $CONTAINER_NAME || true
+                sudo /usr/bin/docker rm $CONTAINER_NAME || true
                 '''
             }
         }
@@ -53,9 +47,9 @@ pipeline {
         stage('Run Container') {
             steps {
                 sh '''
-                $DOCKER run -d \
+                sudo /usr/bin/docker run -d \
                 --name $CONTAINER_NAME \
-                -p 8081:80 \
+                -p $PORT:80 \
                 $IMAGE_NAME
                 '''
             }
@@ -64,23 +58,35 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                $DOCKER ps
+                echo "========== RUNNING CONTAINERS =========="
+                sudo /usr/bin/docker ps
+
+                echo "========== IMAGES =========="
+                sudo /usr/bin/docker images
                 '''
             }
         }
     }
 
     post {
+
         success {
-            echo 'Frontend deployed successfully!'
+            echo "========================================="
+            echo "Frontend deployed successfully!"
+            echo "Access your application at:"
+            echo "http://<SERVER-IP>:8081"
+            echo "========================================="
         }
 
         failure {
-            echo 'Deployment failed.'
+            echo "========================================="
+            echo "Deployment Failed!"
+            echo "Check the Console Output."
+            echo "========================================="
         }
 
         always {
-            echo 'Pipeline execution completed.'
+            echo "Pipeline execution completed."
         }
     }
 }
